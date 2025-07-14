@@ -1,0 +1,9 @@
+.container {
+  box-sizing: content-box;
+  width: 512px;
+  height: 512px;
+  border: 2px solid #000;
+  border-radius: 8px;
+  box-shadow: 2px 2px 0px #000;
+  display: grid;
+}
