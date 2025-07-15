@@ -1,0 +1,13 @@
+.container {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 1fr auto;
+  justify-content: end;
+  align-items: center;
+  gap: 8px;
+}
+
+.fileControls {
+  display: flex;
+  justify-content: end;
+}

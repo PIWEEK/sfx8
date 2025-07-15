@@ -6,7 +6,9 @@
   --light-blue: #4a7a96;
   --light-red: #ee8695;
   --light-orange: #fbbbad;
+  --white: #fff;
 
+  --bg-color: var(--white);
   --main-color: var(--black);
   --alt-main-color: var(--dark-blue);
   --alt-main-color-secondary: var(--light-blue);
