@@ -1,8 +1,9 @@
-import { useRef, useCallback, useState, useMemo } from "react";
+import { useRef, useCallback, useState, useMemo, useContext } from "react";
 import styles from "./NoteEditor.module.css";
+
+import SfxContext, { NOTE_COUNT, PITCH_COUNT } from "../../context/sfx-context";
 import { noteName } from "../../utils/notes";
 
-const NOTE_COUNT = 32;
 const NOTE_GAP = 8;
 const NOTE_SIZE = 8;
 
@@ -36,21 +37,14 @@ function NoteEditor() {
   const svgRef = useRef<SVGSVGElement>(null);
   const isMouseDown = useRef(false);
 
+  const { notes, setNotes } = useContext(SfxContext);
+
   const [displayNote, setDisplayNote] = useState<number | undefined>(undefined);
 
   const humanizedDisplayNote = useMemo(() => {
     if (displayNote === undefined) return undefined;
     return noteName(displayNote);
   }, [displayNote]);
-
-  // init the notes array with 32 empty slots
-  const [notes, setNotes] = useState<(number | undefined)[]>(() => {
-    const data: (number | undefined)[] = Array.from(
-      { length: NOTE_COUNT },
-      () => undefined
-    );
-    return data;
-  });
 
   function mouseToViewportXY(event: React.MouseEvent<SVGSVGElement>) {
     const { clientX, clientY } = event;
@@ -67,9 +61,12 @@ function NoteEditor() {
   function xyToNoteSlot(x: number, y: number) {
     const index = Math.max(
       0,
-      Math.min(31, Math.floor(x / (NOTE_SIZE + NOTE_GAP)))
+      Math.min(NOTE_COUNT - 1, Math.floor(x / (NOTE_SIZE + NOTE_GAP)))
     );
-    const pitch = Math.max(0, Math.min(63, Math.floor((260 - y) / 4)));
+    const pitch = Math.max(
+      0,
+      Math.min(PITCH_COUNT - 1, Math.floor((260 - y) / 4))
+    );
     return { index, pitch };
   }
 

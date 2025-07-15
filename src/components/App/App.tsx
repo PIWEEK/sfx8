@@ -1,10 +1,12 @@
 import styles from "./App.module.css";
-import { Pacman } from "iconoir-react";
+import { SfxProvider } from "../../context/SfxProvider";
+
 import NoteEditor from "../NoteEditor";
+import { Pacman } from "iconoir-react";
 
 function App() {
   return (
-    <>
+    <SfxProvider>
       <h1 className={styles.title}>
         <Pacman width={24} /> SFX-8
       </h1>
@@ -16,7 +18,7 @@ function App() {
         </header>
         <NoteEditor />
       </main>
-    </>
+    </SfxProvider>
   );
 }
 
