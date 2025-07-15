@@ -6,26 +6,12 @@ const NOTE_COUNT = 32;
 const NOTE_GAP = 8;
 const NOTE_SIZE = 8;
 
-function Note({
-  note,
-  index,
-  onMouseOver,
-}: {
-  note: number;
-  index: number;
-  onMouseOver?: (event: { note: number }) => void;
-}) {
+function Note({ note, index }: { note: number; index: number }) {
   const y = 260 - note * 4;
   const x = index * (NOTE_SIZE + NOTE_GAP);
 
-  const handleMouseOver = useCallback(() => {
-    if (onMouseOver && typeof onMouseOver === "function") {
-      onMouseOver({ note });
-    }
-  }, [note, onMouseOver]);
-
   return (
-    <g transform={`translate(${x}, ${0})`} onMouseOver={handleMouseOver}>
+    <g transform={`translate(${x}, ${0})`}>
       {/* Invisible hit area for mouse events */}
       <rect width={NOTE_SIZE + NOTE_GAP} height={260} fill="transparent" />
       <rect
@@ -58,68 +44,78 @@ function NoteEditor() {
   }, [displayNote]);
 
   // init the notes array with 32 empty slots
-  const [notes, _] = useState<(number | undefined)[]>(() => {
+  const [notes, setNotes] = useState<(number | undefined)[]>(() => {
     const data: (number | undefined)[] = Array.from(
       { length: NOTE_COUNT },
       () => undefined
     );
-    data[0] = 0; // C0
-    data[1] = 1;
-    data[2] = 2;
-    data[3] = 5;
-    data[4] = 7;
-    data[5] = 9;
-    data[6] = 11;
-    data[7] = 12;
-    data[8] = 16;
-    data[9] = 18;
-    data[10] = 20;
-    data[11] = 22;
-    data[31] = 63; // D#5
     return data;
   });
 
-  function addNoteAt(_x: number, _y: number) {
-    // TODO: Implement this
+  function mouseToViewportXY(event: React.MouseEvent<SVGSVGElement>) {
+    const { clientX, clientY } = event;
+    const { left, top } = svgRef.current?.getBoundingClientRect() ?? {
+      left: 0,
+      top: 0,
+    };
+    const x = clientX - left;
+    const y = clientY - top;
+
+    return { x, y };
+  }
+
+  function xyToNoteSlot(x: number, y: number) {
+    const index = Math.max(
+      0,
+      Math.min(31, Math.floor(x / (NOTE_SIZE + NOTE_GAP)))
+    );
+    const pitch = Math.max(0, Math.min(63, Math.floor((260 - y) / 4)));
+    return { index, pitch };
+  }
+
+  function addNoteAt(index: number, pitch: number) {
+    let newNotes = [...notes];
+    newNotes[index] = pitch;
+
+    setNotes(newNotes);
   }
 
   const handleMouseMove = useCallback(
     (event: React.MouseEvent<SVGSVGElement>) => {
-      if (!isMouseDown.current) return;
+      const { x, y } = mouseToViewportXY(event);
+      const { index, pitch } = xyToNoteSlot(x, y);
+      setDisplayNote(pitch);
 
-      const { clientX, clientY } = event;
-      const { left, top } = svgRef.current?.getBoundingClientRect() ?? {
-        left: 0,
-        top: 0,
-      };
-      const x = clientX - left;
-      const y = clientY - top;
-      addNoteAt(x, y);
+      if (!isMouseDown.current) return;
+      addNoteAt(index, pitch);
+    },
+    [addNoteAt, setDisplayNote]
+  );
+
+  const handleMouseClick = useCallback(
+    (event: React.MouseEvent<SVGSVGElement>) => {
+      isMouseDown.current = true;
+
+      const { x, y } = mouseToViewportXY(event);
+      const { index, pitch } = xyToNoteSlot(x, y);
+      addNoteAt(index, pitch);
     },
     [addNoteAt]
   );
-
-  const handleNoteOver = useCallback((event: { note: number }) => {
-    setDisplayNote(event.note);
-  }, []);
 
   return (
     <section className={styles.container}>
       <svg
         className={styles.viewport}
         ref={svgRef}
-        onMouseDown={() => (isMouseDown.current = true)}
+        onMouseDown={handleMouseClick}
         onMouseUp={() => (isMouseDown.current = false)}
         onMouseMove={handleMouseMove}
+        onMouseLeave={() => (isMouseDown.current = false)}
       >
         {notes.map((note, index) =>
           note !== undefined ? (
-            <Note
-              note={note}
-              key={index}
-              index={index}
-              onMouseOver={handleNoteOver}
-            />
+            <Note note={note} key={index} index={index} />
           ) : null
         )}
       </svg>
