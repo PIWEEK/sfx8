@@ -8,6 +8,7 @@
   padding: 4px 8px;
   box-shadow: 2px 2px 0 var(--main-color);
   transition: all 0.1s ease-in-out;
+  height: 32px;
 }
 
 .button:hover {

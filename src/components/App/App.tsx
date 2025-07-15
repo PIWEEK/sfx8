@@ -7,17 +7,6 @@ import NoteEditor from "../NoteEditor";
 import { Pacman } from "iconoir-react";
 
 function App() {
-  const handleSpacebarPress = () => {
-    console.log("Spacebar pressed!");
-    // Add your spacebar callback logic here
-  };
-
-  useKeyPress({
-    key: "Space",
-    callback: handleSpacebarPress,
-    preventDefault: true,
-  });
-
   return (
     <SfxProvider>
       <h1 className={styles.title}>
