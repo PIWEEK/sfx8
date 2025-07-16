@@ -1,36 +1,20 @@
-import * as Tone from "tone";
-import { useEffect, useContext, useRef } from "react";
+import { useEffect, useContext } from "react";
 import SfxContext from "../../context/sfx-context";
-
-class Synth {
-  #pulse: Tone.PulseOscillator;
-
-  constructor() {
-    this.#pulse = new Tone.PulseOscillator().toDestination();
-    this.#pulse.volume.value = -20;
-  }
-
-  play(notes: (number | undefined)[], speed: number) {
-    this.#pulse.frequency.value = 440;
-    this.#pulse.start();
-  }
-
-  stop() {
-    this.#pulse.stop();
-  }
-}
+import SynthContext from "../../context/synth-context";
 
 export default function SfxPlayer({ isPlaying }: { isPlaying: boolean }) {
-  const synth = useRef<Synth>(new Synth());
   const { notes, speed } = useContext(SfxContext);
+  const { synth } = useContext(SynthContext);
 
   useEffect(() => {
+    if (synth === null) return;
+
     if (isPlaying) {
-      synth.current.play(notes, speed);
+      synth.play(notes, speed);
     } else {
-      synth.current.stop();
+      synth.stop();
     }
-  }, [isPlaying, notes, speed]);
+  }, [isPlaying, notes, speed, synth]);
 
   return <></>;
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { PlaySolid, PauseSolid, Download } from "iconoir-react";
 
 import { useKeyPress } from "../../hooks/useKeyPress";
@@ -7,12 +7,22 @@ import Button from "../ui/Button";
 import IconButton from "../ui/IconButton";
 
 import styles from "./SfxControls.module.css";
+import { SynthProvider } from "../../context/SynthProvider";
+import SynthContext from "../../context/synth-context";
 
 function PlayButton() {
   const [isPlaying, setIsPlaying] = useState(false);
+  const { synth, init: initSynth } = useContext(SynthContext);
+  console.log("Synth:", synth);
 
-  const togglePlayback = () => {
-    setIsPlaying(!isPlaying);
+  const togglePlayback = async () => {
+    const nextIsPlaying = !isPlaying;
+
+    if (nextIsPlaying && !synth) {
+      await initSynth();
+    }
+
+    setIsPlaying(nextIsPlaying);
   };
 
   useKeyPress({
@@ -34,15 +44,17 @@ function PlayButton() {
 
 export default function SfxControls() {
   return (
-    <header className={styles.container}>
-      <section className={styles.container}>
-        <section className={styles.playbackControls}>
-          <PlayButton />
+    <SynthProvider>
+      <header className={styles.container}>
+        <section className={styles.container}>
+          <section className={styles.playbackControls}>
+            <PlayButton />
+          </section>
+          <section className={styles.fileControls}>
+            <Button icon={Download}>Download</Button>
+          </section>
         </section>
-        <section className={styles.fileControls}>
-          <Button icon={Download}>Download</Button>
-        </section>
-      </section>
-    </header>
+      </header>
+    </SynthProvider>
   );
 }

@@ -1,10 +1,28 @@
 import styles from "./App.module.css";
 import { SfxProvider } from "../../context/SfxProvider";
-import { useKeyPress } from "../../hooks/useKeyPress";
+import { useContext } from "react";
+import SfxContext from "../../context/sfx-context";
 
 import SfxControls from "../SfxControls";
 import NoteEditor from "../NoteEditor";
 import { Pacman } from "iconoir-react";
+
+function SpeedControl() {
+  const { speed, setSpeed } = useContext(SfxContext);
+
+  return (
+    <p>
+      Speed{" "}
+      <input
+        type="number"
+        min={0}
+        max={255}
+        value={speed}
+        onChange={(e) => setSpeed(Number(e.target.value))}
+      />
+    </p>
+  );
+}
 
 function App() {
   return (
@@ -15,9 +33,7 @@ function App() {
       <main className={styles.container}>
         <SfxControls />
         <header className={styles.toolbar}>
-          <p>
-            Speed <input type="number" min={0} max={255} defaultValue={0} />
-          </p>
+          <SpeedControl />
         </header>
         <NoteEditor />
       </main>
