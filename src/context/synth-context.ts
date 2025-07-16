@@ -8,15 +8,17 @@ export class Synth {
 
   constructor() {
     this.#pulse = new PulseOscillator().toDestination();
-    this.#pulse.volume.value = -10;
+    this.#pulse.volume.value = -20;
+    // Set a default frequency to avoid artifacts
+    this.#pulse.frequency.value = 440;
   }
 
   async play(notes: (number | undefined)[], speed: number) {
     // Stop any existing sequence
     this.stop();
 
-    // Convert speed to tempo (0-255 range to reasonable BPM range)
-    const tempo = 60 + speed * 0.75; // 60-250 BPM range
+    // Convert speed to tempo (0-255 range to 60-1080 BPM range)
+    const tempo = 60 + speed * 4;
 
     // Filter out undefined notes
     const validNotes = notes.filter((note) => !!note);
@@ -31,6 +33,9 @@ export class Synth {
     // Calculate time per beat based on tempo
     const secondsPerBeat = 60 / tempo;
 
+    // Start the oscillator early to avoid glitches
+    this.#pulse.start(startTime);
+
     // Schedule each note using musical time notation
     notes.forEach((pitch, index) => {
       if (pitch !== undefined) {
@@ -41,17 +46,33 @@ export class Synth {
         const note = noteName(pitch);
         const frequency = Frequency(note).toFrequency();
 
-        // Each note lasts 1 beat (quarter note)
         this.#pulse.frequency.setValueAtTime(frequency, timeInSeconds);
-        this.#pulse.start(timeInSeconds);
-        this.#pulse.stop(timeInSeconds + 1 * secondsPerBeat);
+
+        // Use volume control instead of start/stop for smoother transitions
+        // and avoid a crackling sound when the note is played
+        this.#pulse.volume.setValueAtTime(-20, timeInSeconds);
+        this.#pulse.volume.setValueAtTime(
+          -Infinity,
+          timeInSeconds + 1 * secondsPerBeat
+        );
       }
     });
+
+    // Stop the oscillator after the last note
+    const totalDuration = validNotes.length * secondsPerBeat;
+    this.#pulse.stop(startTime + totalDuration + 0.1);
   }
 
   stop() {
-    // Stop the oscillator
-    this.#pulse.stop();
+    // Dispose the oscillator to clear ALL scheduled events
+    // This is necessary because Web Audio API scheduled events persist even after stop()
+    this.#pulse.dispose();
+
+    // Create a fresh oscillator for the next sequence
+    this.#pulse = new PulseOscillator().toDestination();
+    this.#pulse.volume.value = -20;
+    // Set a default frequency to avoid artifacts
+    this.#pulse.frequency.value = 440;
   }
 }
 
