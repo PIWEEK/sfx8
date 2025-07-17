@@ -1,4 +1,4 @@
-import { useCallback, useContext, useState } from "react";
+import { useCallback, useContext, useState, useRef, useEffect } from "react";
 import { PlaySolid, PauseSolid, Download, XmarkCircle } from "iconoir-react";
 
 import { useKeyPress } from "../../hooks/useKeyPress";
@@ -14,6 +14,7 @@ import SfxContext from "../../context/sfx-context";
 function PlayButton() {
   const [isPlaying, setIsPlaying] = useState(false);
   const { synth, init: initSynth } = useContext(SynthContext);
+  const onCompleteRef = useRef<(() => void) | null>(null);
 
   const togglePlayback = async () => {
     const nextIsPlaying = !isPlaying;
@@ -29,6 +30,11 @@ function PlayButton() {
     setIsPlaying(false);
   }, []);
 
+  // Keep the ref updated with the current callback
+  useEffect(() => {
+    onCompleteRef.current = handlePlaybackComplete;
+  }, [handlePlaybackComplete]);
+
   useKeyPress({
     key: "Space",
     callback: togglePlayback,
@@ -43,7 +49,7 @@ function PlayButton() {
       />
       <SfxPlayer
         isPlaying={isPlaying}
-        onPlaybackComplete={handlePlaybackComplete}
+        onPlaybackComplete={onCompleteRef.current || handlePlaybackComplete}
       />
     </>
   );

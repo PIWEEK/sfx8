@@ -12,9 +12,6 @@ export class SfxSynth {
   }
 
   async play(notes: Note[], speed: number, onComplete?: () => void) {
-    // Stop any existing sequence
-    this.stop();
-
     // Store the completion callback
     this.#onComplete = onComplete || null;
 
@@ -25,7 +22,6 @@ export class SfxSynth {
     const validNotes = notes.filter((note) => !!note);
 
     if (validNotes.length === 0) {
-      // If no notes, call completion immediately
       if (this.#onComplete) {
         this.#onComplete();
       }
@@ -33,22 +29,28 @@ export class SfxSynth {
     }
 
     const context = getContext();
-    const startTime = context.currentTime + 0.1; // Add 100ms silence before sequence starts
+
+    // Stop any existing sequence before starting a new one
+    context.transport.stop();
+    context.transport.cancel();
+    // Reset transport time to 0 to ensure consistent timing
+    context.transport.position = 0;
+
+    // Use transport-relative timing instead of absolute audio context time
+    const startTime = 0.1; // Add 100ms silence before sequence starts
 
     // Calculate time per beat based on tempo
     const secondsPerBeat = 60 / tempo;
 
-    // Schedule each merged note using PolySynth
+    // Schedule each merged note using transport.schedule
     validNotes.forEach(({ pitch, startIndex, duration }) => {
       const timeInSeconds = startTime + startIndex * secondsPerBeat;
       const note = noteName(pitch);
 
-      // Use PolySynth to trigger the note with proper duration
-      this.#synth.triggerAttackRelease(
-        note,
-        duration * secondsPerBeat,
-        timeInSeconds
-      );
+      // Schedule the note using transport instead of direct triggerAttackRelease
+      context.transport.schedule((time) => {
+        this.#synth.triggerAttackRelease(note, duration * secondsPerBeat, time);
+      }, timeInSeconds);
     });
 
     // Calculate when the sequence will finish and schedule the completion callback
@@ -58,13 +60,16 @@ export class SfxSynth {
       )
     );
     const totalDuration = latestEndTime + 0.1; // Add buffer for the initial delay
-
     // Schedule the completion callback using the recommended Tone.js API
     context.transport.schedule(() => {
       if (this.#onComplete) {
-        this.#onComplete();
+        this.#onComplete!();
       }
     }, startTime + totalDuration);
+
+    if (context.transport.state !== "started") {
+      context.transport.start();
+    }
   }
 
   stop() {
@@ -77,11 +82,11 @@ export class SfxSynth {
     // Stop all notes and dispose the synth
     this.#synth.dispose();
 
-    // Create a fresh synth for the next sequence
-    this.#synth = buildSynth();
-
     // Clear the callback
     this.#onComplete = null;
+
+    // Create a fresh synth for the next sequence
+    this.#synth = buildSynth();
   }
 }
 
