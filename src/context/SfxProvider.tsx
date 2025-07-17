@@ -40,6 +40,11 @@ export const SfxProvider = ({ children }: SfxProviderProps) => {
     getFromStorage(STORAGE.SPEED, 128)
   );
 
+  const reset = () => {
+    setNotes(new Array(NOTE_COUNT).fill(undefined));
+    setSpeed(128);
+  };
+
   useEffect(() => {
     saveToStorage(STORAGE.NOTES, notes);
   }, [notes]);
@@ -49,7 +54,7 @@ export const SfxProvider = ({ children }: SfxProviderProps) => {
   }, [speed]);
 
   return (
-    <SfxContext.Provider value={{ notes, setNotes, speed, setSpeed }}>
+    <SfxContext.Provider value={{ notes, setNotes, speed, setSpeed, reset }}>
       {children}
     </SfxContext.Provider>
   );
