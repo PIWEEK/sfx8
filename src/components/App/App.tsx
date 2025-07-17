@@ -1,5 +1,6 @@
 import styles from "./App.module.css";
 import { SfxProvider } from "../../context/SfxProvider";
+import { SynthProvider } from "../../context/SynthProvider";
 import { useContext } from "react";
 import SfxContext from "../../context/sfx-context";
 
@@ -26,18 +27,20 @@ function SpeedControl() {
 
 function App() {
   return (
-    <SfxProvider>
-      <h1 className={styles.title}>
-        <Pacman width={24} /> SFX-8
-      </h1>
-      <main className={styles.container}>
-        <SfxControls />
-        <header className={styles.toolbar}>
-          <SpeedControl />
-        </header>
-        <NoteEditor />
-      </main>
-    </SfxProvider>
+    <SynthProvider>
+      <SfxProvider>
+        <h1 className={styles.title}>
+          <Pacman width={24} /> SFX-8
+        </h1>
+        <main className={styles.container}>
+          <SfxControls />
+          <header className={styles.toolbar}>
+            <SpeedControl />
+          </header>
+          <NoteEditor />
+        </main>
+      </SfxProvider>
+    </SynthProvider>
   );
 }
 

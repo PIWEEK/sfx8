@@ -1,6 +1,7 @@
 import * as Tone from "tone";
 import { useState, type ReactNode } from "react";
 import SynthContext, { SfxSynth } from "./synth-context";
+import { type Note } from "../utils/notes";
 
 interface SynthProviderProps {
   children: ReactNode;
@@ -9,10 +10,23 @@ interface SynthProviderProps {
 export const SynthProvider = ({ children }: SynthProviderProps) => {
   const [synth, setSynth] = useState<SfxSynth | null>(null);
 
-  const init = async () => {
+  // Modified init to return the SfxSynth instance
+  const init = async (): Promise<SfxSynth> => {
     await Tone.start();
-    setSynth(new SfxSynth());
+    const newSynth = new SfxSynth();
+    setSynth(newSynth);
+    return newSynth;
   };
 
-  return <SynthContext value={{ synth, init }}>{children}</SynthContext>;
+  const exportToWav = async (notes: Note[], speed: number): Promise<Blob> => {
+    let synthInstance = synth;
+    if (!synthInstance) {
+      synthInstance = await init();
+    }
+    return synthInstance.exportToWav(notes, speed);
+  };
+
+  return (
+    <SynthContext value={{ synth, init, exportToWav }}>{children}</SynthContext>
+  );
 };

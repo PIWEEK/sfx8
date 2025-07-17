@@ -7,9 +7,9 @@ import Button from "../ui/Button";
 import IconButton from "../ui/IconButton";
 
 import styles from "./SfxControls.module.css";
-import { SynthProvider } from "../../context/SynthProvider";
 import SynthContext from "../../context/synth-context";
 import SfxContext from "../../context/sfx-context";
+import { mergeNotes } from "../../utils/notes";
 
 function PlayButton() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -56,7 +56,9 @@ function PlayButton() {
 }
 
 export default function SfxControls() {
-  const { reset } = useContext(SfxContext);
+  const { reset, notes, speed } = useContext(SfxContext);
+  const { exportToWav } = useContext(SynthContext);
+  const [isExporting, setIsExporting] = useState(false);
 
   const handleResetClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -66,21 +68,59 @@ export default function SfxControls() {
     [reset]
   );
 
+  const handleDownloadClick = useCallback(
+    async (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+
+      if (isExporting) return;
+
+      setIsExporting(true);
+
+      try {
+        const mergedNotes = mergeNotes(notes);
+        const blob = await exportToWav(mergedNotes, speed);
+
+        // Create download link
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `sfx8-export-${new Date()
+          .toISOString()
+          .slice(0, 19)
+          .replace(/:/g, "-")}.wav`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error("Export failed:", error);
+        alert("Failed to export audio. Please try again.");
+      } finally {
+        setIsExporting(false);
+      }
+    },
+    [exportToWav, notes, speed, isExporting]
+  );
+
   return (
-    <SynthProvider>
-      <header className={styles.container}>
-        <section className={styles.container}>
-          <section className={styles.playbackControls}>
-            <PlayButton />
-          </section>
-          <section className={styles.fileControls}>
-            <Button icon={XmarkCircle} onClick={handleResetClick}>
-              Reset
-            </Button>
-            <Button icon={Download}>Download</Button>
-          </section>
+    <header className={styles.container}>
+      <section className={styles.container}>
+        <section className={styles.playbackControls}>
+          <PlayButton />
         </section>
-      </header>
-    </SynthProvider>
+        <section className={styles.fileControls}>
+          <Button icon={XmarkCircle} onClick={handleResetClick}>
+            Reset
+          </Button>
+          <Button
+            icon={Download}
+            onClick={handleDownloadClick}
+            disabled={isExporting}
+          >
+            {isExporting ? "Exporting..." : "Download"}
+          </Button>
+        </section>
+      </section>
+    </header>
   );
 }

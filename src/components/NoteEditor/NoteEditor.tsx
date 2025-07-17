@@ -85,12 +85,15 @@ function NoteEditor() {
     return { index, pitch };
   }
 
-  function addNoteAt(index: number, pitch: number) {
-    let newNotes = [...notes];
-    newNotes[index] = pitch;
+  const addNoteAt = useCallback(
+    (index: number, pitch: number) => {
+      const newNotes = [...notes];
+      newNotes[index] = pitch;
 
-    setNotes(newNotes);
-  }
+      setNotes(newNotes);
+    },
+    [notes, setNotes]
+  );
 
   const handleMouseMove = useCallback(
     (event: React.MouseEvent<SVGSVGElement>) => {
@@ -117,7 +120,7 @@ function NoteEditor() {
 
   const deleteNoteAt = useCallback(
     (index: number) => {
-      let newNotes = [...notes];
+      const newNotes = [...notes];
       newNotes[index] = undefined;
       setNotes(newNotes);
     },
