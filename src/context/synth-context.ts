@@ -1,16 +1,16 @@
 import { createContext } from "react";
-import { PulseOscillator, Frequency, getContext } from "tone";
+import { PolySynth, getContext, Synth } from "tone";
 
-import { noteName } from "../utils/notes";
+import { noteName, type Note } from "../utils/notes";
 
-export class Synth {
-  #pulse: PulseOscillator;
+export class SfxSynth {
+  #synth: PolySynth;
 
   constructor() {
-    this.#pulse = buildOscillator();
+    this.#synth = buildSynth();
   }
 
-  async play(notes: (number | undefined)[], speed: number) {
+  async play(notes: Note[], speed: number) {
     // Stop any existing sequence
     this.stop();
 
@@ -25,61 +25,54 @@ export class Synth {
     }
 
     const context = getContext();
-    const startTime = context.currentTime;
+    const startTime = context.currentTime + 0.1; // Add 100ms silence before sequence starts
 
     // Calculate time per beat based on tempo
     const secondsPerBeat = 60 / tempo;
 
-    // Start the oscillator early to avoid glitches
-    this.#pulse.start(startTime);
+    // Schedule each merged note using PolySynth
+    notes.forEach(({ pitch, startIndex, duration }) => {
+      const timeInSeconds = startTime + startIndex * secondsPerBeat;
+      const note = noteName(pitch);
 
-    // Schedule each note using musical time notation
-    notes.forEach((pitch, index) => {
-      if (pitch !== undefined) {
-        // Each step is one beat (quarter note)
-        const beatsFromStart = index * 1;
-        const timeInSeconds = startTime + beatsFromStart * secondsPerBeat;
-
-        const note = noteName(pitch);
-        const frequency = Frequency(note).toFrequency();
-
-        this.#pulse.frequency.setValueAtTime(frequency, timeInSeconds);
-
-        // Use volume control instead of start/stop for smoother transitions
-        // and avoid a crackling sound when the note is played
-        this.#pulse.volume.setValueAtTime(-20, timeInSeconds);
-        this.#pulse.volume.setValueAtTime(
-          -Infinity,
-          timeInSeconds + 1 * secondsPerBeat
-        );
-      }
+      // Use PolySynth to trigger the note with proper duration
+      this.#synth.triggerAttackRelease(
+        note,
+        duration * secondsPerBeat,
+        timeInSeconds
+      );
     });
-
-    // Stop the oscillator after the last note
-    const totalDuration = validNotes.length * secondsPerBeat;
-    this.#pulse.stop(startTime + totalDuration + 0.1);
   }
 
   stop() {
-    // Dispose the oscillator to clear ALL scheduled events
-    // This is necessary because Web Audio API scheduled events persist even after stop()
-    this.#pulse.dispose();
+    // Stop all notes and dispose the synth
+    this.#synth.dispose();
 
-    // Create a fresh oscillator for the next sequence
-    this.#pulse = buildOscillator();
+    // Create a fresh synth for the next sequence
+    this.#synth = buildSynth();
   }
 }
 
-function buildOscillator(): PulseOscillator {
-  const oscillator = new PulseOscillator().toDestination();
-  oscillator.volume.value = -20;
-  oscillator.width.value = 0.5;
-  oscillator.frequency.value = 440;
-  return oscillator;
+function buildSynth(): PolySynth {
+  const synth = new PolySynth(Synth, {
+    oscillator: {
+      type: "pulse",
+      width: 0.5,
+      volume: -20,
+    },
+    envelope: {
+      attack: 0.01, // Quick attack
+      decay: 0, // No decay
+      sustain: 1, // Sustain at full volume
+      release: 0.1, // Quick release
+    },
+  }).toDestination();
+
+  return synth;
 }
 
 const SynthContext = createContext<{
-  synth: Synth | null;
+  synth: SfxSynth | null;
   init: () => Promise<void>;
 }>({
   synth: null,

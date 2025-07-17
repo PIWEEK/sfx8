@@ -7,12 +7,27 @@ import { noteName } from "../../utils/notes";
 const NOTE_GAP = 8;
 const NOTE_SIZE = 8;
 
-function Note({ note, index }: { note: number; index: number }) {
+function Note({
+  note,
+  index,
+  onDelete,
+}: {
+  note: number;
+  index: number;
+  onDelete: (index: number) => void;
+}) {
   const y = 260 - note * 4;
   const x = index * (NOTE_SIZE + NOTE_GAP);
 
+  const handleRightClick = (event: React.MouseEvent<SVGRectElement>) => {
+    event.preventDefault();
+    if (onDelete && typeof onDelete === "function") {
+      onDelete(index);
+    }
+  };
+
   return (
-    <g transform={`translate(${x}, ${0})`}>
+    <g transform={`translate(${x}, ${0})`} onContextMenu={handleRightClick}>
       {/* Invisible hit area for mouse events */}
       <rect width={NOTE_SIZE + NOTE_GAP} height={260} fill="transparent" />
       <rect
@@ -100,6 +115,15 @@ function NoteEditor() {
     [addNoteAt]
   );
 
+  const deleteNoteAt = useCallback(
+    (index: number) => {
+      let newNotes = [...notes];
+      newNotes[index] = undefined;
+      setNotes(newNotes);
+    },
+    [notes, setNotes]
+  );
+
   return (
     <section className={styles.container}>
       <svg
@@ -112,7 +136,12 @@ function NoteEditor() {
       >
         {notes.map((note, index) =>
           note !== undefined ? (
-            <Note note={note} key={index} index={index} />
+            <Note
+              note={note}
+              key={index}
+              index={index}
+              onDelete={(index) => deleteNoteAt(index)}
+            />
           ) : null
         )}
       </svg>
