@@ -3,7 +3,7 @@
 // The return value is a string like "C0", "C#0", "D0", etc.
 export function noteName(index: number) {
   const note = index % 12;
-  const octave = Math.floor(index / 12);
+  const octave = Math.floor(index / 12) + 1;
   const noteName = [
     "C",
     "C#",

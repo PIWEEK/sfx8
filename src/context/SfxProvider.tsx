@@ -10,7 +10,7 @@ export const SfxProvider = ({ children }: SfxProviderProps) => {
   const [notes, setNotes] = useState<(number | undefined)[]>(
     Array(NOTE_COUNT).fill(undefined)
   );
-  const [speed, setSpeed] = useState<number>(200);
+  const [speed, setSpeed] = useState<number>(128);
 
   return (
     <SfxContext value={{ notes, setNotes, speed, setSpeed }}>

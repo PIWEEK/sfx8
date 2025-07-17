@@ -13,7 +13,6 @@ import SynthContext from "../../context/synth-context";
 function PlayButton() {
   const [isPlaying, setIsPlaying] = useState(false);
   const { synth, init: initSynth } = useContext(SynthContext);
-  console.log("Synth:", synth);
 
   const togglePlayback = async () => {
     const nextIsPlaying = !isPlaying;

@@ -17,7 +17,7 @@ function SpeedControl() {
         type="number"
         min={0}
         max={255}
-        value={speed}
+        defaultValue={speed}
         onChange={(e) => setSpeed(Number(e.target.value))}
       />
     </p>

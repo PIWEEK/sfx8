@@ -7,10 +7,7 @@ export class Synth {
   #pulse: PulseOscillator;
 
   constructor() {
-    this.#pulse = new PulseOscillator().toDestination();
-    this.#pulse.volume.value = -20;
-    // Set a default frequency to avoid artifacts
-    this.#pulse.frequency.value = 440;
+    this.#pulse = buildOscillator();
   }
 
   async play(notes: (number | undefined)[], speed: number) {
@@ -18,7 +15,7 @@ export class Synth {
     this.stop();
 
     // Convert speed to tempo (0-255 range to 60-1080 BPM range)
-    const tempo = 60 + speed * 4;
+    const tempo = 60 + speed * 6;
 
     // Filter out undefined notes
     const validNotes = notes.filter((note) => !!note);
@@ -69,11 +66,16 @@ export class Synth {
     this.#pulse.dispose();
 
     // Create a fresh oscillator for the next sequence
-    this.#pulse = new PulseOscillator().toDestination();
-    this.#pulse.volume.value = -20;
-    // Set a default frequency to avoid artifacts
-    this.#pulse.frequency.value = 440;
+    this.#pulse = buildOscillator();
   }
+}
+
+function buildOscillator(): PulseOscillator {
+  const oscillator = new PulseOscillator().toDestination();
+  oscillator.volume.value = -20;
+  oscillator.width.value = 0.5;
+  oscillator.frequency.value = 440;
+  return oscillator;
 }
 
 const SynthContext = createContext<{
