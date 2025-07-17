@@ -9,8 +9,8 @@ const SfxContext = createContext<{
   setSpeed: (value: number) => void;
   setNotes: (value: (number | undefined)[]) => void;
 }>({
-  notes: Array(NOTE_COUNT).fill(undefined),
-  speed: 0,
+  notes: new Array(NOTE_COUNT).fill(undefined),
+  speed: 128,
   setSpeed: () => {},
   setNotes: () => {},
 });
