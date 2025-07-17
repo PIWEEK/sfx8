@@ -5,14 +5,18 @@ import { noteName, type Note } from "../utils/notes";
 
 export class SfxSynth {
   #synth: PolySynth;
+  #onComplete: (() => void) | null = null;
 
   constructor() {
     this.#synth = buildSynth();
   }
 
-  async play(notes: Note[], speed: number) {
+  async play(notes: Note[], speed: number, onComplete?: () => void) {
     // Stop any existing sequence
     this.stop();
+
+    // Store the completion callback
+    this.#onComplete = onComplete || null;
 
     // Convert speed to tempo (0-255 range to 60-1080 BPM range)
     const tempo = 60 + speed * 6;
@@ -21,6 +25,10 @@ export class SfxSynth {
     const validNotes = notes.filter((note) => !!note);
 
     if (validNotes.length === 0) {
+      // If no notes, call completion immediately
+      if (this.#onComplete) {
+        this.#onComplete();
+      }
       return;
     }
 
@@ -31,7 +39,7 @@ export class SfxSynth {
     const secondsPerBeat = 60 / tempo;
 
     // Schedule each merged note using PolySynth
-    notes.forEach(({ pitch, startIndex, duration }) => {
+    validNotes.forEach(({ pitch, startIndex, duration }) => {
       const timeInSeconds = startTime + startIndex * secondsPerBeat;
       const note = noteName(pitch);
 
@@ -42,14 +50,38 @@ export class SfxSynth {
         timeInSeconds
       );
     });
+
+    // Calculate when the sequence will finish and schedule the completion callback
+    const latestEndTime = Math.max(
+      ...validNotes.map(
+        (note) => (note.startIndex + note.duration) * secondsPerBeat
+      )
+    );
+    const totalDuration = latestEndTime + 0.1; // Add buffer for the initial delay
+
+    // Schedule the completion callback using the recommended Tone.js API
+    context.transport.schedule(() => {
+      if (this.#onComplete) {
+        this.#onComplete();
+      }
+    }, startTime + totalDuration);
   }
 
   stop() {
+    const context = getContext();
+
+    // Stop the transport using the recommended API
+    context.transport.stop();
+    context.transport.cancel();
+
     // Stop all notes and dispose the synth
     this.#synth.dispose();
 
     // Create a fresh synth for the next sequence
     this.#synth = buildSynth();
+
+    // Clear the callback
+    this.#onComplete = null;
   }
 }
 
@@ -61,10 +93,10 @@ function buildSynth(): PolySynth {
       volume: -20,
     },
     envelope: {
-      attack: 0.01, // Quick attack
-      decay: 0, // No decay
-      sustain: 1, // Sustain at full volume
-      release: 0.1, // Quick release
+      attack: 0.05, // More pronounced attack for distinct note starts
+      decay: 0.1, // Add some decay to create note separation
+      sustain: 0.8, // Slightly lower sustain for more dynamic sound
+      release: 0.15, // Slightly longer release for smoother note endings
     },
   }).toDestination();
 

@@ -25,6 +25,10 @@ function PlayButton() {
     setIsPlaying(nextIsPlaying);
   };
 
+  const handlePlaybackComplete = useCallback(() => {
+    setIsPlaying(false);
+  }, []);
+
   useKeyPress({
     key: "Space",
     callback: togglePlayback,
@@ -37,7 +41,10 @@ function PlayButton() {
         icon={isPlaying ? PauseSolid : PlaySolid}
         onClick={togglePlayback}
       />
-      <SfxPlayer isPlaying={isPlaying} />
+      <SfxPlayer
+        isPlaying={isPlaying}
+        onPlaybackComplete={handlePlaybackComplete}
+      />
     </>
   );
 }
