@@ -9,12 +9,14 @@ const SfxContext = createContext<{
   setSpeed: (value: number) => void;
   setNotes: (value: (number | undefined)[]) => void;
   reset: () => void;
+  serialize: () => string;
 }>({
   notes: new Array(NOTE_COUNT).fill(undefined),
   speed: 128,
   setSpeed: () => {},
   setNotes: () => {},
   reset: () => {},
+  serialize: () => "",
 });
 
 export default SfxContext;

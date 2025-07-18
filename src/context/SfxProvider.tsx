@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import SfxContext, { NOTE_COUNT } from "./sfx-context";
+import { serializeSfx } from "../utils/sfx-serializer";
 
 interface SfxProviderProps {
   children: ReactNode;
@@ -53,8 +54,14 @@ export const SfxProvider = ({ children }: SfxProviderProps) => {
     saveToStorage(STORAGE.SPEED, speed);
   }, [speed]);
 
+  const serialize = () => {
+    return serializeSfx(notes, speed);
+  };
+
   return (
-    <SfxContext.Provider value={{ notes, setNotes, speed, setSpeed, reset }}>
+    <SfxContext.Provider
+      value={{ notes, setNotes, speed, setSpeed, reset, serialize }}
+    >
       {children}
     </SfxContext.Provider>
   );
