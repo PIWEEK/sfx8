@@ -11,7 +11,7 @@ export default function ShareButton() {
 
   const handleShareClick = () => {
     const sfx = serialize();
-    const url = `${window.location.origin}?sfx=${sfx}`;
+    const url = `${window.location.origin}${window.location.pathname}?sfx=${sfx}`;
     navigator.clipboard.writeText(url);
 
     setShowFlashMessage(true);
