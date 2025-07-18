@@ -1,5 +1,5 @@
 import { useCallback, useContext, useState, useRef, useEffect } from "react";
-import { PlaySolid, PauseSolid, Download, XmarkCircle } from "iconoir-react";
+import { PlaySolid, PauseSolid, XmarkCircle } from "iconoir-react";
 
 import { useKeyPress } from "../../hooks/useKeyPress";
 import SfxPlayer from "../SfxPlayer";
@@ -9,7 +9,6 @@ import IconButton from "../ui/IconButton";
 import styles from "./SfxControls.module.css";
 import SynthContext from "../../context/synth-context";
 import SfxContext from "../../context/sfx-context";
-import { mergeNotes } from "../../utils/notes";
 
 function PlayButton() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -56,9 +55,7 @@ function PlayButton() {
 }
 
 export default function SfxControls() {
-  const { reset, notes, speed } = useContext(SfxContext);
-  const { exportToWav } = useContext(SynthContext);
-  const [isExporting, setIsExporting] = useState(false);
+  const { reset } = useContext(SfxContext);
 
   const handleResetClick = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -68,59 +65,12 @@ export default function SfxControls() {
     [reset]
   );
 
-  const handleDownloadClick = useCallback(
-    async (e: React.MouseEvent<HTMLButtonElement>) => {
-      e.preventDefault();
-
-      if (isExporting) return;
-
-      setIsExporting(true);
-
-      try {
-        const mergedNotes = mergeNotes(notes);
-        const blob = await exportToWav(mergedNotes, speed);
-
-        // Create download link
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `sfx8-export-${new Date()
-          .toISOString()
-          .slice(0, 19)
-          .replace(/:/g, "-")}.wav`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      } catch (error) {
-        console.error("Export failed:", error);
-        alert("Failed to export audio. Please try again.");
-      } finally {
-        setIsExporting(false);
-      }
-    },
-    [exportToWav, notes, speed, isExporting]
-  );
-
   return (
     <header className={styles.container}>
-      <section className={styles.container}>
-        <section className={styles.playbackControls}>
-          <PlayButton />
-        </section>
-        <section className={styles.fileControls}>
-          <Button icon={XmarkCircle} onClick={handleResetClick}>
-            Reset
-          </Button>
-          <Button
-            icon={Download}
-            onClick={handleDownloadClick}
-            disabled={isExporting}
-          >
-            {isExporting ? "Exporting..." : "Download"}
-          </Button>
-        </section>
-      </section>
+      <PlayButton />
+      <Button icon={XmarkCircle} onClick={handleResetClick}>
+        Reset
+      </Button>
     </header>
   );
 }

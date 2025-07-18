@@ -7,6 +7,7 @@ import SfxContext from "../../context/sfx-context";
 import SfxControls from "../SfxControls";
 import NoteEditor from "../NoteEditor";
 import { Pacman } from "iconoir-react";
+import FileControls from "../FileControls";
 
 function SpeedControl() {
   const { speed, setSpeed } = useContext(SfxContext);
@@ -38,6 +39,9 @@ function App() {
             <SpeedControl />
           </header>
           <NoteEditor />
+          <footer>
+            <FileControls />
+          </footer>
         </main>
       </SfxProvider>
     </SynthProvider>
