@@ -1,4 +1,5 @@
 import * as Tone from "tone";
+import { start } from "tone";
 import { useState, type ReactNode } from "react";
 import SynthContext, { SfxSynth } from "./synth-context";
 import { type Note } from "../utils/notes";
@@ -23,6 +24,10 @@ export const SynthProvider = ({ children }: SynthProviderProps) => {
     if (!synthInstance) {
       synthInstance = await init();
     }
+
+    // Ensure the audio context is started by calling Tone.start() again
+    await start();
+
     return synthInstance.exportToWav(notes, speed);
   };
 

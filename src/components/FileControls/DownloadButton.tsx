@@ -21,6 +21,7 @@ function DownloadButton() {
 
       try {
         const mergedNotes = mergeNotes(notes);
+
         const blob = await exportToWav(mergedNotes, speed);
 
         // Create download link

@@ -5,23 +5,43 @@ import { noteName, type Note } from "../utils/notes";
 
 export class SfxSynth {
   #synth: PolySynth;
-  #recorder: Recorder;
   #onComplete: (() => void) | null = null;
 
   constructor() {
     this.#synth = buildSynth().toDestination();
-    this.#recorder = new Recorder();
+  }
+
+  // Shared helper method for preparing playback data
+  #preparePlayback(notes: Note[], speed: number) {
+    // Convert speed to tempo (0-255 range to 60-1080 BPM range)
+    const tempo = 60 + speed * 6;
+
+    // Filter out undefined notes
+    const validNotes = notes.filter((note) => !!note);
+
+    // Calculate time per beat based on tempo
+    const secondsPerBeat = 60 / tempo;
+
+    // Use transport-relative timing instead of absolute audio context time
+    const startTime = 0.1; // Add 100ms silence before sequence starts
+
+    // Calculate when the sequence will finish
+    const latestEndTime = Math.max(
+      ...validNotes.map(
+        (note) => (note.startIndex + note.duration) * secondsPerBeat
+      )
+    );
+    const totalDuration = latestEndTime + 0.1; // Add buffer for the initial delay
+
+    return { validNotes, secondsPerBeat, startTime, totalDuration };
   }
 
   async play(notes: Note[], speed: number, onComplete?: () => void) {
     // Store the completion callback
     this.#onComplete = onComplete || null;
 
-    // Convert speed to tempo (0-255 range to 60-1080 BPM range)
-    const tempo = 60 + speed * 6;
-
-    // Filter out undefined notes
-    const validNotes = notes.filter((note) => !!note);
+    const { validNotes, secondsPerBeat, startTime, totalDuration } =
+      this.#preparePlayback(notes, speed);
 
     if (validNotes.length === 0) {
       if (this.#onComplete) {
@@ -38,12 +58,6 @@ export class SfxSynth {
     // Reset transport time to 0 to ensure consistent timing
     context.transport.position = 0;
 
-    // Use transport-relative timing instead of absolute audio context time
-    const startTime = 0.1; // Add 100ms silence before sequence starts
-
-    // Calculate time per beat based on tempo
-    const secondsPerBeat = 60 / tempo;
-
     // Schedule each merged note using transport.schedule
     validNotes.forEach(({ pitch, startIndex, duration }) => {
       const timeInSeconds = startTime + startIndex * secondsPerBeat;
@@ -55,13 +69,6 @@ export class SfxSynth {
       }, timeInSeconds);
     });
 
-    // Calculate when the sequence will finish and schedule the completion callback
-    const latestEndTime = Math.max(
-      ...validNotes.map(
-        (note) => (note.startIndex + note.duration) * secondsPerBeat
-      )
-    );
-    const totalDuration = latestEndTime + 0.1; // Add buffer for the initial delay
     // Schedule the completion callback using the recommended Tone.js API
     context.transport.schedule(() => {
       if (this.#onComplete) {
@@ -75,84 +82,45 @@ export class SfxSynth {
   }
 
   async exportToWav(notes: Note[], speed: number): Promise<Blob> {
-    const context = getContext();
-
-    // Ensure the audio context is started
-    if (context.state !== "running") {
-      await context.resume();
-    }
-
-    // Convert speed to tempo (0-255 range to 60-1080 BPM range)
-    const tempo = 60 + speed * 6;
-
-    // Filter out undefined notes
-    const validNotes = notes.filter((note) => !!note);
+    const { validNotes, secondsPerBeat, startTime, totalDuration } =
+      this.#preparePlayback(notes, speed);
 
     if (validNotes.length === 0) {
       throw new Error("No notes to export");
     }
 
-    // Calculate time per beat based on tempo
-    const secondsPerBeat = 60 / tempo;
-
-    // Calculate total duration
-    const latestEndTime = Math.max(
-      ...validNotes.map(
-        (note) => (note.startIndex + note.duration) * secondsPerBeat
-      )
-    );
-    const totalDuration = latestEndTime + 0.5; // Add more buffer for recording
-
-    // Create a fresh synth for recording without connecting to destination
+    // Create a fresh synth and recorder
     const recordingSynth = buildSynth();
+    const recorder = new Recorder();
 
-    // Connect the recording synth to the recorder
-    recordingSynth.connect(this.#recorder);
+    // Connect synth to recorder
+    recordingSynth.connect(recorder);
 
     // Start recording
-    this.#recorder.start();
+    recorder.start();
 
-    // Stop any existing sequence
-    context.transport.stop();
-    context.transport.cancel();
-    context.transport.position = 0;
-
-    const startTime = 0.1;
-
-    // Schedule each note using the recording synth
+    // Play the notes
     validNotes.forEach(({ pitch, startIndex, duration }) => {
       const timeInSeconds = startTime + startIndex * secondsPerBeat;
       const note = noteName(pitch);
 
-      context.transport.schedule((time) => {
-        recordingSynth.triggerAttackRelease(
-          note,
-          duration * secondsPerBeat,
-          time
-        );
-      }, timeInSeconds);
+      setTimeout(() => {
+        recordingSynth.triggerAttackRelease(note, duration * secondsPerBeat);
+      }, timeInSeconds * 1000);
     });
 
-    // Start transport
-    context.transport.start();
-
-    // Wait for the recording to complete using a timeout based on actual duration
+    // Wait for recording to complete
+    const recordingDuration = (startTime + totalDuration) * 1000;
     return new Promise((resolve, reject) => {
-      const recordingDuration = (startTime + totalDuration) * 1000; // Convert to milliseconds
       setTimeout(() => {
-        context.transport.stop();
-        context.transport.cancel();
-
-        // Stop recording and get the blob
-        this.#recorder
+        recorder
           .stop()
-          .then((blob) => {
-            console.log("Recording stopped, blob size:", blob.size);
+          .then((blob: Blob) => {
             recordingSynth.dispose();
             resolve(blob);
           })
-          .catch((error) => {
-            console.error("Error stopping recording:", error);
+          .catch((error: Error) => {
+            console.error("Export: Recording failed:", error);
             recordingSynth.dispose();
             reject(error);
           });
