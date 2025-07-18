@@ -48,6 +48,23 @@ function Note({
   );
 }
 
+function SpeedControl() {
+  const { speed, setSpeed } = useContext(SfxContext);
+
+  return (
+    <p>
+      Speed{" "}
+      <input
+        type="number"
+        min={0}
+        max={255}
+        defaultValue={speed}
+        onChange={(e) => setSpeed(Number(e.target.value))}
+      />
+    </p>
+  );
+}
+
 function NoteEditor() {
   const svgRef = useRef<SVGSVGElement>(null);
   const isMouseDown = useRef(false);
@@ -150,6 +167,7 @@ function NoteEditor() {
       </svg>
       <footer className={styles.footer}>
         <p>{humanizedDisplayNote}</p>
+        <SpeedControl />
       </footer>
     </section>
   );

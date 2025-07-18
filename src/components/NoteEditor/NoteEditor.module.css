@@ -4,3 +4,9 @@
   height: 260px;
   cursor: crosshair;
 }
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
